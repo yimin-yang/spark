@@ -18,6 +18,7 @@
 package org.apache.spark.sql.execution.datasources.orc;
 
 import org.apache.hadoop.hive.ql.exec.vector.ColumnVector;
+import org.apache.hadoop.hive.ql.exec.vector.MapColumnVector;
 
 import org.apache.spark.sql.types.DataType;
 import org.apache.spark.sql.types.Decimal;
@@ -32,28 +33,30 @@ import org.apache.spark.unsafe.types.UTF8String;
 public class OrcMapColumnVector extends OrcColumnVector {
   private final OrcColumnVector keys;
   private final OrcColumnVector values;
-  private final long[] offsets;
-  private final long[] lengths;
+  private MapColumnVector mapData;
 
   OrcMapColumnVector(
       DataType type,
       ColumnVector vector,
       OrcColumnVector keys,
-      OrcColumnVector values,
-      long[] offsets,
-      long[] lengths) {
+      OrcColumnVector values) {
 
     super(type, vector);
 
     this.keys = keys;
     this.values = values;
-    this.offsets = offsets;
-    this.lengths = lengths;
+
+    if (vector instanceof MapColumnVector) {
+      mapData = (MapColumnVector) vector;
+    } else {
+      throw new UnsupportedOperationException();
+    }
   }
 
   @Override
   public ColumnarMap getMap(int ordinal) {
-    return new ColumnarMap(keys, values, (int) offsets[ordinal], (int) lengths[ordinal]);
+    return new ColumnarMap(keys, values, (int) mapData.offsets[ordinal],
+      (int) mapData.lengths[ordinal]);
   }
 
   @Override

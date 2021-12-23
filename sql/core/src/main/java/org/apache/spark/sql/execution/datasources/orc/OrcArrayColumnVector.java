@@ -18,6 +18,7 @@
 package org.apache.spark.sql.execution.datasources.orc;
 
 import org.apache.hadoop.hive.ql.exec.vector.ColumnVector;
+import org.apache.hadoop.hive.ql.exec.vector.ListColumnVector;
 
 import org.apache.spark.sql.types.ArrayType;
 import org.apache.spark.sql.types.DataType;
@@ -31,26 +32,27 @@ import org.apache.spark.unsafe.types.UTF8String;
  */
 public class OrcArrayColumnVector extends OrcColumnVector {
   private final OrcColumnVector data;
-  private final long[] offsets;
-  private final long[] lengths;
+  private ListColumnVector listData;
 
   OrcArrayColumnVector(
       DataType type,
       ColumnVector vector,
-      OrcColumnVector data,
-      long[] offsets,
-      long[] lengths) {
+      OrcColumnVector data) {
 
     super(type, vector);
 
     this.data = data;
-    this.offsets = offsets;
-    this.lengths = lengths;
+
+    if (vector instanceof ListColumnVector) {
+      listData = (ListColumnVector) vector;
+    } else {
+      throw new UnsupportedOperationException();
+    }
   }
 
   @Override
   public ColumnarArray getArray(int rowId) {
-    return new ColumnarArray(data, (int) offsets[rowId], (int) lengths[rowId]);
+    return new ColumnarArray(data, (int) listData.offsets[rowId], (int) listData.lengths[rowId]);
   }
 
   @Override
