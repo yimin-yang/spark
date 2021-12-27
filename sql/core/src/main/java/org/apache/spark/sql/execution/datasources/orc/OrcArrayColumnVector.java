@@ -32,7 +32,6 @@ import org.apache.spark.unsafe.types.UTF8String;
  */
 public class OrcArrayColumnVector extends OrcColumnVector {
   private final OrcColumnVector data;
-  private ListColumnVector listData;
 
   OrcArrayColumnVector(
       DataType type,
@@ -42,17 +41,13 @@ public class OrcArrayColumnVector extends OrcColumnVector {
     super(type, vector);
 
     this.data = data;
-
-    if (vector instanceof ListColumnVector) {
-      listData = (ListColumnVector) vector;
-    } else {
-      throw new UnsupportedOperationException();
-    }
   }
 
   @Override
   public ColumnarArray getArray(int rowId) {
-    return new ColumnarArray(data, (int) listData.offsets[rowId], (int) listData.lengths[rowId]);
+    int offsets = (int) ((ListColumnVector) baseData).offsets[rowId];
+    int lengths = (int) ((ListColumnVector) baseData).lengths[rowId];
+    return new ColumnarArray(data, offsets, lengths);
   }
 
   @Override

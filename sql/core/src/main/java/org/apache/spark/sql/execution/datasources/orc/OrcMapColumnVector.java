@@ -33,7 +33,6 @@ import org.apache.spark.unsafe.types.UTF8String;
 public class OrcMapColumnVector extends OrcColumnVector {
   private final OrcColumnVector keys;
   private final OrcColumnVector values;
-  private MapColumnVector mapData;
 
   OrcMapColumnVector(
       DataType type,
@@ -45,18 +44,13 @@ public class OrcMapColumnVector extends OrcColumnVector {
 
     this.keys = keys;
     this.values = values;
-
-    if (vector instanceof MapColumnVector) {
-      mapData = (MapColumnVector) vector;
-    } else {
-      throw new UnsupportedOperationException();
-    }
   }
 
   @Override
   public ColumnarMap getMap(int ordinal) {
-    return new ColumnarMap(keys, values, (int) mapData.offsets[ordinal],
-      (int) mapData.lengths[ordinal]);
+    int offsets = (int) ((MapColumnVector) baseData).offsets[ordinal];
+    int lengths = (int) ((MapColumnVector) baseData).lengths[ordinal];
+    return new ColumnarMap(keys, values, offsets, lengths);
   }
 
   @Override
